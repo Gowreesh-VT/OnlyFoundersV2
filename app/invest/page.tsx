@@ -194,16 +194,85 @@ export default function InvestmentTerminal() {
     fetchData();
   }, [fetchData]);
 
-  // Poll for updates during pitching
+  // Server-Sent Events for real-time updates
   useEffect(() => {
-    if (!isPitching) return;
+    if (!myTeam) return;
     
-    const interval = setInterval(() => {
-      fetchData();
-    }, 5000);
+    const eventSource = new EventSource('/api/invest/stream');
     
-    return () => clearInterval(interval);
-  }, [isPitching, fetchData]);
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.error) {
+          console.error('SSE Error:', data.error);
+          return;
+        }
+        
+        // Update cluster state
+        setCurrentPitchingTeamId(data.currentPitchingTeamId);
+        
+        // Update cluster bidding state
+        setCluster(prev => prev ? {
+          ...prev,
+          current_stage: data.isPitching ? 'pitching' : (data.biddingOpen ? 'bidding' : prev.current_stage),
+          bidding_open: data.biddingOpen,
+          current_pitching_team_id: data.currentPitchingTeamId
+        } : prev);
+        
+        // Update investment states from server
+        if (data.investmentStates) {
+          setInvestmentStates(prev => ({ ...prev, ...data.investmentStates }));
+          // Also update drafts with amounts from server
+          const serverDrafts: Record<string, number> = {};
+          Object.entries(data.investmentStates).forEach(([teamId, state]: [string, any]) => {
+            if (state.amount !== undefined) {
+              serverDrafts[teamId] = state.amount;
+            }
+          });
+          if (Object.keys(serverDrafts).length > 0) {
+            setDrafts(prev => ({ ...prev, ...serverDrafts }));
+          }
+        }
+        
+        // Update market data when all finalized
+        setAllTeamsFinalized(data.allFinalized);
+        if (data.allFinalized && data.marketData) {
+          const valuations: Record<string, number> = {};
+          data.marketData.forEach((m: { teamId: string; totalReceived: number }) => {
+            valuations[m.teamId] = m.totalReceived;
+          });
+          setMarketValuations(valuations);
+        }
+        
+        // Update target teams pitching status
+        if (data.currentPitchingTeamId) {
+          setTargetTeams(prev => prev.map(t => ({
+            ...t,
+            is_pitching: t.id === data.currentPitchingTeamId
+          })));
+        } else {
+          setTargetTeams(prev => prev.map(t => ({
+            ...t,
+            is_pitching: false
+          })));
+        }
+        
+        console.log('📡 SSE Update:', data.timestamp);
+      } catch (err) {
+        console.error('SSE parse error:', err);
+      }
+    };
+    
+    eventSource.onerror = (err) => {
+      console.error('SSE connection error:', err);
+      // EventSource will auto-reconnect
+    };
+    
+    return () => {
+      eventSource.close();
+    };
+  }, [myTeam]);
 
   const adjustAmount = (teamId: string, delta: number) => {
     // Check if this team's draft is locked
