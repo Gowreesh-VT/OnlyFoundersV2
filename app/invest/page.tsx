@@ -194,85 +194,80 @@ export default function InvestmentTerminal() {
     fetchData();
   }, [fetchData]);
 
-  // Server-Sent Events for real-time updates
+  // Poll for real-time updates every 3 seconds (always active)
   useEffect(() => {
-    if (!myTeam) return;
-    
-    const eventSource = new EventSource('/api/invest/stream');
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        if (data.error) {
-          console.error('SSE Error:', data.error);
-          return;
-        }
-        
-        // Update cluster state
-        setCurrentPitchingTeamId(data.currentPitchingTeamId);
-        
-        // Update cluster bidding state
-        setCluster(prev => prev ? {
-          ...prev,
-          current_stage: data.isPitching ? 'pitching' : (data.biddingOpen ? 'bidding' : prev.current_stage),
-          bidding_open: data.biddingOpen,
-          current_pitching_team_id: data.currentPitchingTeamId
-        } : prev);
-        
-        // Update investment states from server
-        if (data.investmentStates) {
-          setInvestmentStates(prev => ({ ...prev, ...data.investmentStates }));
-          // Also update drafts with amounts from server
-          const serverDrafts: Record<string, number> = {};
-          Object.entries(data.investmentStates).forEach(([teamId, state]: [string, any]) => {
-            if (state.amount !== undefined) {
-              serverDrafts[teamId] = state.amount;
+    // Start polling after initial load
+    const pollInterval = setInterval(() => {
+      // Only poll if we have the basic data loaded
+      if (myTeam && cluster) {
+        fetch('/api/invest')
+          .then(res => res.json())
+          .then(data => {
+            if (data.error) return;
+            
+            // Update pitching state
+            const newPitchingTeamId = data.cluster?.current_pitching_team_id || null;
+            setCurrentPitchingTeamId(newPitchingTeamId);
+            
+            // Update cluster state
+            setCluster(prev => prev ? {
+              ...prev,
+              current_stage: data.cluster?.current_stage || prev.current_stage,
+              bidding_open: data.cluster?.bidding_open ?? prev.bidding_open,
+              current_pitching_team_id: newPitchingTeamId
+            } : prev);
+            
+            // Update team balance
+            if (data.myTeam) {
+              setMyTeam(prev => prev ? {
+                ...prev,
+                balance: data.myTeam.balance,
+                is_finalized: data.myTeam.is_finalized
+              } : prev);
             }
-          });
-          if (Object.keys(serverDrafts).length > 0) {
-            setDrafts(prev => ({ ...prev, ...serverDrafts }));
-          }
-        }
-        
-        // Update market data when all finalized
-        setAllTeamsFinalized(data.allFinalized);
-        if (data.allFinalized && data.marketData) {
-          const valuations: Record<string, number> = {};
-          data.marketData.forEach((m: { teamId: string; totalReceived: number }) => {
-            valuations[m.teamId] = m.totalReceived;
-          });
-          setMarketValuations(valuations);
-        }
-        
-        // Update target teams pitching status
-        if (data.currentPitchingTeamId) {
-          setTargetTeams(prev => prev.map(t => ({
-            ...t,
-            is_pitching: t.id === data.currentPitchingTeamId
-          })));
-        } else {
-          setTargetTeams(prev => prev.map(t => ({
-            ...t,
-            is_pitching: false
-          })));
-        }
-        
-        console.log('📡 SSE Update:', data.timestamp);
-      } catch (err) {
-        console.error('SSE parse error:', err);
+            
+            // Update investment states
+            if (data.investments?.length > 0) {
+              const newStates: Record<string, { is_draft: boolean; draft_locked: boolean; is_locked: boolean }> = {};
+              const newDrafts: Record<string, number> = {};
+              data.investments.forEach((inv: any) => {
+                newStates[inv.target_team_id] = {
+                  is_draft: inv.is_draft,
+                  draft_locked: inv.draft_locked,
+                  is_locked: inv.is_locked
+                };
+                newDrafts[inv.target_team_id] = Number(inv.amount);
+              });
+              setInvestmentStates(newStates);
+              setDrafts(prev => ({ ...prev, ...newDrafts }));
+            }
+            
+            // Update market valuations
+            setAllTeamsFinalized(data.allTeamsFinalized || false);
+            if (data.marketValuations) {
+              setMarketValuations(data.marketValuations);
+            }
+            
+            // Update target teams pitching status
+            if (data.targetTeams) {
+              setTargetTeams(prev => prev.map(t => {
+                const updated = data.targetTeams.find((nt: any) => nt.id === t.id);
+                return updated ? {
+                  ...t,
+                  is_pitching: updated.is_pitching,
+                  total_received: updated.total_received
+                } : t;
+              }));
+            }
+            
+            console.log('📡 Poll Update:', Date.now());
+          })
+          .catch(err => console.error('Poll error:', err));
       }
-    };
+    }, 3000);
     
-    eventSource.onerror = (err) => {
-      console.error('SSE connection error:', err);
-      // EventSource will auto-reconnect
-    };
-    
-    return () => {
-      eventSource.close();
-    };
-  }, [myTeam]);
+    return () => clearInterval(pollInterval);
+  }, [myTeam, cluster]);
 
   const adjustAmount = (teamId: string, delta: number) => {
     // Check if this team's draft is locked
@@ -676,50 +671,38 @@ export default function InvestmentTerminal() {
           )}
         </section>
 
-        {/* 5. Market Leaderboard (shown after all teams finalize) */}
-        {allTeamsFinalized && Object.keys(marketValuations).length > 0 && (
-          <section className="mb-6 bg-gradient-to-br from-green-900/20 to-emerald-900/10 border border-green-500/30 rounded-xl p-5">
-            <h3 className="font-serif text-lg font-bold text-green-400 mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Final Market Valuations
+        {/* 5. Results Message (shown after all teams finalize) */}
+        {allTeamsFinalized && (
+          <section className="mb-6 bg-gradient-to-br from-green-900/20 to-emerald-900/10 border border-green-500/30 rounded-xl p-5 text-center">
+            <TrendingUp className="w-8 h-8 text-green-400 mx-auto mb-3" />
+            <h3 className="font-serif text-lg font-bold text-green-400 mb-2">
+              All Teams Have Finalized!
             </h3>
-            <div className="space-y-2">
-              {Object.entries(marketValuations)
-                .sort(([, a], [, b]) => b - a)
-                .map(([teamId, value], index) => {
-                  const team = targetTeams.find(t => t.id === teamId);
-                  const isMyTeam = teamId === myTeam?.id;
-                  const teamName = isMyTeam ? myTeam?.name : team?.team_name;
-                  return (
-                    <div key={teamId} className={`flex justify-between items-center py-2 border-b border-green-500/10 last:border-0 ${isMyTeam ? 'bg-[#FFD700]/10 -mx-2 px-2 rounded' : ''}`}>
-                      <div className="flex items-center gap-3">
-                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                          index === 0 ? 'bg-yellow-500 text-black' : 
-                          index === 1 ? 'bg-gray-400 text-black' : 
-                          index === 2 ? 'bg-orange-600 text-white' : 'bg-gray-700 text-gray-300'
-                        }`}>
-                          {index + 1}
-                        </span>
-                        <span className={`font-medium ${isMyTeam ? 'text-[#FFD700]' : 'text-white'}`}>
-                          {teamName || 'Unknown'}
-                          {isMyTeam && <span className="ml-2 text-[10px] text-[#FFD700]/70">(YOU)</span>}
-                        </span>
-                      </div>
-                      <span className={`font-mono font-bold ${isMyTeam ? 'text-[#FFD700]' : 'text-green-400'}`}>{formatCurrency(value)}</span>
-                    </div>
-                  );
-                })}
-            </div>
+            <p className="text-sm text-gray-400">
+              Final market valuations will be revealed by the Cluster Admin.
+            </p>
           </section>
         )}
 
         {/* 6. Action Bar (Fixed Floating above Nav) */}
         {!isFinalized && canEdit && currentDraftTotal > 0 && (
           <div className="fixed bottom-[84px] left-0 right-0 px-4 z-40 max-w-md mx-auto animate-in slide-in-from-bottom-4">
+            {/* Warning if not using full budget */}
+            {remainingBalance > 0 && (
+              <div className="mb-2 bg-amber-500/20 border border-amber-500/50 rounded-lg px-3 py-2 text-center">
+                <p className="text-xs text-amber-400">
+                  ⚠️ You must use your entire budget ({formatCurrency(remainingBalance)} remaining)
+                </p>
+              </div>
+            )}
             <button
               onClick={handleCommit}
-              disabled={isSubmitting || isNegative}
-              className="w-full h-14 bg-[#FFD700] hover:bg-[#F0C000] active:scale-[0.98] transition-all text-black font-bold uppercase tracking-widest text-xs rounded-xl shadow-[0_0_30px_rgba(255,215,0,0.3)] flex items-center justify-center gap-3 border border-yellow-400"
+              disabled={isSubmitting || isNegative || remainingBalance > 0}
+              className={`w-full h-14 transition-all text-black font-bold uppercase tracking-widest text-xs rounded-xl flex items-center justify-center gap-3 border ${
+                remainingBalance > 0 
+                  ? 'bg-gray-600 border-gray-500 cursor-not-allowed opacity-60' 
+                  : 'bg-[#FFD700] hover:bg-[#F0C000] active:scale-[0.98] border-yellow-400 shadow-[0_0_30px_rgba(255,215,0,0.3)]'
+              }`}
             >
               {isSubmitting ? (
                 <>

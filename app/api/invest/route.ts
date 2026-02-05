@@ -323,6 +323,14 @@ async function handleCommitPortfolio(user: any, userTeam: any, cluster: any, inv
         return NextResponse.json({ error: "Total exceeds available balance", success: false }, { status: 400 });
     }
 
+    // MUST USE FULL BUDGET - total must equal balance
+    if (totalAmount !== userTeam.balance) {
+        return NextResponse.json({ 
+            error: `You must invest your entire budget. Current: ₹${(totalAmount/100000).toFixed(1)}L, Required: ₹${(userTeam.balance/100000).toFixed(1)}L`, 
+            success: false 
+        }, { status: 400 });
+    }
+
     const dbSession = await mongoose.startSession();
 
     try {
