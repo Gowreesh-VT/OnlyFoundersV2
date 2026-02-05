@@ -319,7 +319,7 @@ export default function ClusterAdminDashboard() {
   };
 
   const endPitch = async (scheduleId: string) => {
-    if (!cluster) return;
+    if (!cluster || !activePitch) return;
     
     try {
       const res = await fetch('/api/cluster-admin/pitch', {
@@ -327,7 +327,11 @@ export default function ClusterAdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'END_PITCH',
-          payload: { scheduleId, clusterId: cluster.id }
+          payload: { 
+            scheduleId, 
+            clusterId: cluster.id,
+            teamId: activePitch.team_id // Include teamId to lock drafts
+          }
         })
       });
       

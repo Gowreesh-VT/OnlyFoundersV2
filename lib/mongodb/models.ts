@@ -343,7 +343,11 @@ export interface IInvestment extends Document {
     // Investment metadata
     reasoning?: string;
     confidenceLevel?: number;
-    isLocked: boolean;
+    
+    // Draft system: isDraft=true means placed during pitching, draftLocked=true means pitch ended
+    isDraft: boolean;           // True = draft investment during pitching
+    draftLocked: boolean;       // True = pitch ended, draft locked for this target team
+    isLocked: boolean;          // True = final investment committed
     
     createdAt: Date;
     updatedAt: Date;
@@ -357,12 +361,18 @@ const investmentSchema = new Schema<IInvestment>({
     // Investment metadata
     reasoning: { type: String },
     confidenceLevel: { type: Number, min: 1, max: 5 },
+    
+    // Draft system
+    isDraft: { type: Boolean, default: true },
+    draftLocked: { type: Boolean, default: false },
     isLocked: { type: Boolean, default: false }
 }, { timestamps: true });
 
 investmentSchema.index({ investorTeamId: 1 });
 investmentSchema.index({ targetTeamId: 1 });
 investmentSchema.index({ isLocked: 1 });
+investmentSchema.index({ isDraft: 1 });
+investmentSchema.index({ draftLocked: 1 });
 investmentSchema.index({ investorTeamId: 1, targetTeamId: 1 }, { unique: true });
 
 export const Investment: Model<IInvestment> = mongoose.models.Investment || mongoose.model<IInvestment>('Investment', investmentSchema);

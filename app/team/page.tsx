@@ -66,9 +66,9 @@ export default function TeamPage() {
             setTeam(data.team);
             setIsLeader(data.isLeader);
             
-            // Fetch active pitch for cluster
+            // Fetch active pitch for cluster using participant-accessible endpoint
             if (data.team?.cluster_id) {
-                const pitchRes = await fetch(`/api/cluster-admin/pitch?clusterId=${data.team.cluster_id}`);
+                const pitchRes = await fetch(`/api/teams/active-pitch?clusterId=${data.team.cluster_id}`);
                 if (pitchRes.ok) {
                     const pitchData = await pitchRes.json();
                     setActivePitch(pitchData.activePitch);
@@ -85,13 +85,13 @@ export default function TeamPage() {
         fetchTeamData();
     }, [fetchTeamData]);
     
-    // Poll for pitch updates (replaces Supabase realtime)
+    // Poll for pitch updates
     useEffect(() => {
         if (!team?.cluster_id) return;
 
         const pollPitchStatus = async () => {
             try {
-                const pitchRes = await fetch(`/api/cluster-admin/pitch?clusterId=${team.cluster_id}`);
+                const pitchRes = await fetch(`/api/teams/active-pitch?clusterId=${team.cluster_id}`);
                 if (pitchRes.ok) {
                     const pitchData = await pitchRes.json();
                     setActivePitch(pitchData.activePitch);

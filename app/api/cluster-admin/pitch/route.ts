@@ -248,7 +248,7 @@ async function handleStartPitch(payload: any) {
 }
 
 async function handleEndPitch(payload: any) {
-    const { scheduleId, clusterId } = payload;
+    const { scheduleId, clusterId, teamId } = payload;
 
     // Update pitch schedule
     await PitchSchedule.findByIdAndUpdate(scheduleId, {
@@ -258,12 +258,28 @@ async function handleEndPitch(payload: any) {
         completedAt: new Date()
     });
 
+    // Lock all draft investments for this team (from other teams in the cluster)
+    // This ensures the draft bids placed during this team's pitch are now locked
+    if (teamId) {
+        const { Investment } = await import('@/lib/mongodb/models');
+        await Investment.updateMany(
+            {
+                targetTeamId: new mongoose.Types.ObjectId(teamId),
+                isDraft: true,
+                draftLocked: false
+            },
+            {
+                draftLocked: true
+            }
+        );
+    }
+
     // Clear current pitching team
     await Cluster.findByIdAndUpdate(clusterId, {
         currentPitchingTeamId: null
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: "Pitch ended and drafts locked" });
 }
 
 async function handleUpdatePitchStatus(payload: any) {
