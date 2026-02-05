@@ -1,0 +1,494 @@
+/* Import Google Fonts - Figma Design System */
+@import url('https://fonts.googleapis.com/css2?family=Parisienne&family=Playfair+Display:wght@700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  /* OnlyFounders Luxury Dark Theme */
+  --color-background: #000000;
+  --color-background-dark: #000000;
+  --color-surface: #0A0A0A;
+  --color-surface-dark: #0A0A0A;
+  --color-surface-elevated: #121212;
+  --color-border: #FFD700;
+  --color-border-dark: #333333;
+  --color-border-active: #FFD700;
+
+  /* Primary Gold - Figma Gold */
+  --color-primary: #FFD700;
+  --color-primary-hover: #FFC700;
+  --color-primary-foreground: #000000;
+
+  /* Semantic Colors */
+  --color-success: #10B981;
+  --color-error: #DC2626;
+  --color-warning: #F59E0B;
+  --color-info: #3B82F6;
+
+  /* Text Colors */
+  --color-main: #FFFFFF;
+  --color-muted: #999999;
+  --color-subtle: #666666;
+
+  /* Fonts - Figma Design */
+  --font-script: 'Parisienne', cursive;
+  --font-display: 'Playfair Display', serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  /* Sharp Design - No Rounded Corners */
+  --radius: 0px;
+  --border-width: 1px;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-main);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+}
+
+/* Figma Design Utilities */
+
+/* Gold glow effect for logo/icons */
+.gold-glow {
+  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6)) drop-shadow(0 0 40px rgba(255, 215, 0, 0.3));
+}
+
+/* Corner dots */
+.corner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #FFD700;
+  position: absolute;
+}
+
+/* OnlyFounders logo text styling */
+.only-text {
+  font-family: var(--font-script);
+  font-size: 3rem;
+  color: #FFFFFF;
+  line-height: 1;
+}
+
+.founders-text {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 800;
+  color: #FFD700;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+/* Technical monospace text */
+.tech-text {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+}
+
+/* Gold underline inputs */
+.gold-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #FFD700;
+  color: #FFFFFF;
+  padding: 0.75rem 0;
+  font-family: var(--font-sans);
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.gold-input::placeholder {
+  color: #666666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+}
+
+.gold-input:focus {
+  border-bottom-color: #FFC700;
+  box-shadow: 0 1px 0 0 rgba(255, 215, 0, 0.3);
+}
+
+/* Luxury gradient text animation */
+.luxury-gradient-text {
+  background: linear-gradient(to right, #FFD700, #FDB931, #FFD700);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shine 3s infinite linear;
+  background-size: 200% auto;
+}
+
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+/* Glass panel effect */
+.glass-panel {
+  background: rgba(18, 18, 18, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* College logo mask effect */
+.college-logo-mask {
+  filter: grayscale(100%) brightness(0.7) sepia(100%) hue-rotate(5deg) saturate(300%) contrast(0.8);
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.college-logo-mask:hover {
+  opacity: 1;
+  filter: grayscale(0%) brightness(1) sepia(0%);
+}
+
+/* Fade in up animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+/* Pulse animation for corner dots */
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 10px #FFD700;
+  }
+
+  50% {
+    opacity: 0.5;
+    box-shadow: 0 0 20px #FFD700;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Hide scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Selection styling */
+::selection {
+  background-color: var(--color-primary);
+  color: black;
+}
+
+/* Page transition */
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+}
+
+.page-exit {
+  opacity: 1;
+}
+
+.page-exit-active {
+  opacity: 0;
+  transition: opacity 150ms ease-in;
+}
+
+/* Fade animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-in-bottom {
+  animation: slideInFromBottom 0.4s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight 0.3s ease-out forwards;
+}
+
+/* Staggered children animation */
+.stagger-children>*:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.stagger-children>*:nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.stagger-children>*:nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.stagger-children>*:nth-child(4) {
+  animation-delay: 150ms;
+}
+
+.stagger-children>*:nth-child(5) {
+  animation-delay: 200ms;
+}
+
+.stagger-children>*:nth-child(6) {
+  animation-delay: 250ms;
+}
+
+.stagger-children>*:nth-child(7) {
+  animation-delay: 300ms;
+}
+
+.stagger-children>*:nth-child(8) {
+  animation-delay: 350ms;
+}
+
+/* Will-change hints for smoother animations */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* Investment Event Specific Styles */
+
+/* Sharp border button - Trading Terminal style */
+.btn-sharp {
+  border: 1px solid var(--color-border-active);
+  background: transparent;
+  color: var(--color-primary);
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border-radius: var(--radius);
+}
+
+.btn-sharp:hover {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.btn-sharp-filled {
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border-radius: var(--radius);
+}
+
+.btn-sharp-filled:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+/* Data card - For investment amounts, balances */
+.data-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 24px;
+  border-radius: var(--radius);
+}
+
+.data-card-active {
+  border-color: var(--color-border-active);
+  background: var(--color-surface-elevated);
+}
+
+/* Monospace numbers for financial data */
+.financial-number {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+/* Status indicators */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid;
+  border-radius: var(--radius);
+}
+
+.status-active {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.status-pending {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.status-invalid {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+/* Pitch timer display */
+.timer-display {
+  font-family: var(--font-mono);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.timer-critical {
+  color: var(--color-error);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Entity ID display */
+.entity-id {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Cluster indicator */
+.cluster-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--color-surface-elevated);
+  border: 2px solid var(--color-primary);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 1px;
+  border-radius: var(--radius);
+}
+
+/* Investment input styling */
+.investment-input {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-main);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  transition: border-color 0.2s ease;
+}
+
+.investment-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* QR Code container */
+.qr-container {
+  padding: 24px;
+  background: white;
+  border: 2px solid var(--color-primary);
+  display: inline-block;
+  border-radius: var(--radius);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}

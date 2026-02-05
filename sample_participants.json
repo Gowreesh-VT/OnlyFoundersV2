@@ -1,0 +1,14 @@
+{
+  "participants": [
+    {
+      "fullName": "Mithil Girish",
+      "email": "mithilgirish@gmail.com",
+      "collegeName": "VIT Chennai",
+      "teamName": "Test Team",
+      "role": "participant",
+      "phoneNumber": "1269443234",
+      "domain": "fintech"
+    }
+  ],
+  "sendEmails": true
+}
