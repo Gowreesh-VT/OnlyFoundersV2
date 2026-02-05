@@ -89,6 +89,7 @@ export default function InvestmentTerminal() {
   const [marketValuations, setMarketValuations] = useState<Record<string, number>>({});
   const [allTeamsFinalized, setAllTeamsFinalized] = useState(false);
   const [currentPitchingTeamId, setCurrentPitchingTeamId] = useState<string | null>(null);
+  const [lastEditTime, setLastEditTime] = useState<number>(0); // Track when user last edited
 
   // -- Computed Values --
   const currentDraftTotal = useMemo(() =>
@@ -96,15 +97,16 @@ export default function InvestmentTerminal() {
     [drafts]
   );
 
+  const isFinalized = myTeam?.is_finalized ?? false;
   const teamBalance = myTeam?.balance ?? INITIAL_BUDGET;
-  const remainingBalance = teamBalance - currentDraftTotal;
+  // If finalized, remaining balance is 0 (they've committed everything)
+  const remainingBalance = isFinalized ? 0 : teamBalance - currentDraftTotal;
   const isNegative = remainingBalance < 0;
 
   // -- Permissions --
   const isPitching = cluster?.current_stage === 'pitching';
   const isBidding = cluster?.current_stage === 'bidding' || (cluster as any)?.bidding_open === true;
   const isTeamLead = profile?.role === 'team_lead' || profile?.role === 'super_admin';
-  const isFinalized = myTeam?.is_finalized ?? false;
   
   // Can draft during pitching, can edit/commit during bidding
   const canDraft = isPitching && isTeamLead && !isFinalized;
@@ -239,7 +241,12 @@ export default function InvestmentTerminal() {
                 newDrafts[inv.target_team_id] = Number(inv.amount);
               });
               setInvestmentStates(newStates);
-              setDrafts(prev => ({ ...prev, ...newDrafts }));
+              
+              // Only update drafts if user hasn't edited in the last 5 seconds
+              const timeSinceLastEdit = Date.now() - lastEditTime;
+              if (timeSinceLastEdit > 5000) {
+                setDrafts(prev => ({ ...prev, ...newDrafts }));
+              }
             }
             
             // Update market valuations
@@ -267,7 +274,7 @@ export default function InvestmentTerminal() {
     }, 3000);
     
     return () => clearInterval(pollInterval);
-  }, [myTeam, cluster]);
+  }, [myTeam, cluster, lastEditTime]);
 
   const adjustAmount = (teamId: string, delta: number) => {
     // Check if this team's draft is locked
@@ -279,6 +286,9 @@ export default function InvestmentTerminal() {
     if (isPitching && teamId !== currentPitchingTeamId) return;
     
     if (!canInvest) return;
+
+    // Track that user is editing - prevents polling from overwriting for 5 seconds
+    setLastEditTime(Date.now());
 
     setDrafts(prev => {
       const current = prev[teamId] || 0;
@@ -506,7 +516,6 @@ export default function InvestmentTerminal() {
               const isCurrentlyPitching = team.is_pitching;
               const isDraftLocked = state?.draft_locked && !canEdit;
               const isInvestmentLocked = state?.is_locked;
-              const marketValue = allTeamsFinalized ? marketValuations[id] : null;
               
               // Determine if controls should be enabled
               const canModifyThis = canInvest && !isInvestmentLocked && (
@@ -554,21 +563,10 @@ export default function InvestmentTerminal() {
                         <div className="flex justify-between items-start">
                           <h4 className="text-white font-bold text-base truncate pr-2">{team.team_name}</h4>
                           <div className="text-right">
-                            {allTeamsFinalized && marketValue !== null ? (
-                              <>
-                                <p className="text-[9px] text-green-500 uppercase tracking-widest">MARKET CAP</p>
-                                <p className="text-green-400 font-mono text-sm font-bold">
-                                  {formatCurrency(marketValue)}
-                                </p>
-                              </>
-                            ) : (
-                              <>
-                                <p className="text-[9px] text-gray-500 uppercase tracking-widest">ASK</p>
-                                <p className="text-gray-300 font-mono text-xs">
-                                  {formatCurrency(team.total_received || 0)}
-                                </p>
-                              </>
-                            )}
+                            <p className="text-[9px] text-gray-500 uppercase tracking-widest">STATUS</p>
+                            <p className="text-gray-300 font-mono text-xs">
+                              {isInvestmentLocked ? '✓ Locked' : investedAmount > 0 ? 'Draft' : '—'}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 mt-1">

@@ -340,13 +340,17 @@ async function handleCommitPortfolio(user: any, userTeam: any, cluster: any, inv
 
                 const targetTeamId = new mongoose.Types.ObjectId(inv.target_team_id);
 
-                // Check if there was a previous investment (draft) to calculate difference
+                // Check if there was a previous investment (draft)
                 const existingInv = await Investment.findOne({
                     investorTeamId: userTeam._id,
                     targetTeamId: targetTeamId
                 }).session(dbSession);
 
-                const previousAmount = existingInv?.amount || 0;
+                // Calculate the difference for totalReceived update
+                // If existing was a draft (not yet locked), we need to add the full new amount
+                // If existing was already locked, we only add the difference
+                const wasAlreadyLocked = existingInv?.isLocked || false;
+                const previousAmount = wasAlreadyLocked ? (existingInv?.amount || 0) : 0;
                 const difference = inv.amount - previousAmount;
 
                 // Update or create investment as locked
@@ -364,7 +368,8 @@ async function handleCommitPortfolio(user: any, userTeam: any, cluster: any, inv
                     { upsert: true, session: dbSession }
                 );
 
-                // Update target team's total_received (only by the difference)
+                // Update target team's total_received
+                // Only count investments when they become locked (finalized)
                 if (difference !== 0) {
                     await Team.findByIdAndUpdate(
                         targetTeamId,
@@ -374,12 +379,12 @@ async function handleCommitPortfolio(user: any, userTeam: any, cluster: any, inv
                 }
             }
 
-            // Update investor team
+            // Update investor team - set balance to 0 since they must use full budget
             await Team.findByIdAndUpdate(
                 userTeam._id,
                 {
-                    balance: userTeam.balance - totalAmount,
-                    $inc: { totalInvested: totalAmount },
+                    balance: 0,
+                    totalInvested: totalAmount,
                     isFinalized: true
                 },
                 { session: dbSession }
