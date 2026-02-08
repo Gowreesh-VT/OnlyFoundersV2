@@ -1,13 +1,13 @@
 {
   "participants": [
     {
-      "fullName": "Rakshana",
-      "email": "rakshana3110@gmail.com",
+      "fullName": "Legenders",
+      "email": "legend@onlyfounders.com",
       "collegeName": "VIT Chennai",
-      "teamName": "Test E",
+      "teamName": "Legend",
       "role": "team_lead",
       "phoneNumber": "1269444234",
-      "domain": "fintech"
+      "domain": "AI"
     }
   ],
   "sendEmails": true
